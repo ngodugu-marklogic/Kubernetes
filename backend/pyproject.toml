@@ -1,0 +1,28 @@
+[project]
+name = "ai-team-partner"
+version = "0.1.0"
+description = "AI team partner and scrum master API"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "hyperforge==1.0.0.post380",
+    "pydantic-settings>=2.10",
+    "sqlalchemy>=2.0,<3",
+    "uvicorn>=0.35",
+]
+
+[project.optional-dependencies]
+dev = ["httpx>=0.28", "pytest>=8", "ruff>=0.15"]
+
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+team-partner-http = "team_partner.commands:run_api"
+
+[tool.ruff]
+line-length = 120

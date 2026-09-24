@@ -1,10 +1,11 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from '@/App';
 
 describe('App', () => {
   beforeEach(() => {
+    HTMLElement.prototype.scrollIntoView = vi.fn();
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => ({
@@ -20,16 +21,19 @@ describe('App', () => {
                     assignee: 'Jamie Lee',
                     last_activity: 'Jamie Lee updated the status yesterday',
                     branches: ['feature/ex-1'],
-                    pull_requests: [{ title: 'Ship it PR', url: 'https://example.com/pr/1', status: 'Open' }],
+                    pull_requests: [
+                      { title: 'Ship it PR', url: 'https://example.com/pr/1', status: 'Open' },
+                    ],
                   },
                 ],
               }
             : { teams: ['Platform', 'Growth'] },
-      })),
+      }))
     );
   });
 
   afterEach(() => {
+    cleanup();
     vi.unstubAllGlobals();
   });
 
@@ -47,6 +51,12 @@ describe('App', () => {
     await waitFor(() => {
       expect(screen.getByText('Ship it')).toBeInTheDocument();
     });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open assistant' }));
+    expect(screen.getByLabelText('Jira context: Platform')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Growth' }));
+    expect(screen.getByLabelText('Jira context: Growth')).toBeInTheDocument();
   });
 
   it('sends a generic teams notification when notify button is clicked', async () => {

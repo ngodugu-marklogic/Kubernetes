@@ -20,6 +20,10 @@ const quickPrompts = [
   'Summarize our current priorities',
 ];
 
+interface ChatbotProps {
+  selectedTeam: string | null;
+}
+
 const isRecord = (value: unknown): value is JsonRecord =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -48,7 +52,7 @@ const Icon = ({ name }: { name: 'chat' | 'close' | 'new' | 'send' | 'stop' }) =>
   );
 };
 
-export const Chatbot = () => {
+export const Chatbot = ({ selectedTeam }: ChatbotProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string>();
   const [connection, setConnection] = useState<ConnectionState>('disconnected');
@@ -233,7 +237,10 @@ export const Chatbot = () => {
     setError('');
     setIsStreaming(true);
     assistantIdRef.current = undefined;
-    socket.send(JSON.stringify({ command: 'prompt', prompt: text }));
+    const scopedPrompt = selectedTeam
+      ? `[Jira context: Scope Jira queries to Agile Team = ${JSON.stringify(selectedTeam)}. Use jira_search or acli and do not query other teams unless requested.]\n\n${text}`
+      : text;
+    socket.send(JSON.stringify({ command: 'prompt', prompt: scopedPrompt }));
   };
 
   const stop = () => {
@@ -362,6 +369,12 @@ export const Chatbot = () => {
               sendPrompt();
             }}
           >
+            {selectedTeam && (
+              <div className="chat-context" aria-label={`Jira context: ${selectedTeam}`}>
+                <span aria-hidden="true">Jira</span>
+                <strong>{selectedTeam}</strong>
+              </div>
+            )}
             <label htmlFor="chat-prompt" className="sr-only">
               Message Execution Partner
             </label>

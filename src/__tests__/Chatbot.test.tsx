@@ -69,7 +69,7 @@ describe('Chatbot', () => {
   });
 
   it('creates a session, sends a prompt, and renders tool activity and the final answer', async () => {
-    render(<Chatbot />);
+    render(<Chatbot selectedTeam="Team Bravo" />);
     const socket = await openReadyChat();
 
     expect(fetch).toHaveBeenCalledWith(
@@ -91,8 +91,10 @@ describe('Chatbot', () => {
 
     expect(JSON.parse(socket.sent[0])).toEqual({
       command: 'prompt',
-      prompt: 'What is at risk?',
+      prompt:
+        '[Jira context: Scope Jira queries to Agile Team = "Team Bravo". Use jira_search or acli and do not query other teams unless requested.]\n\nWhat is at risk?',
     });
+    expect(screen.getByLabelText('Jira context: Team Bravo')).toBeInTheDocument();
     expect(screen.getByText('What is at risk?')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Assistant is responding');
 
@@ -127,7 +129,7 @@ describe('Chatbot', () => {
   });
 
   it('preserves the conversation when closed and starts a clean new chat', async () => {
-    render(<Chatbot />);
+    render(<Chatbot selectedTeam={null} />);
     const firstSocket = await openReadyChat();
     const input = screen.getByLabelText('Message Execution Partner');
     fireEvent.change(input, { target: { value: 'Keep this' } });
@@ -148,7 +150,7 @@ describe('Chatbot', () => {
   });
 
   it('supports quick prompts, interruption, replay, and visible protocol errors', async () => {
-    render(<Chatbot />);
+    render(<Chatbot selectedTeam={null} />);
     const socket = await openReadyChat();
 
     fireEvent.click(screen.getByRole('button', { name: 'What should I focus on today?' }));
@@ -172,7 +174,7 @@ describe('Chatbot', () => {
       ok: false,
       status: 503,
     } as Response);
-    render(<Chatbot />);
+    render(<Chatbot selectedTeam={null} />);
     fireEvent.click(screen.getByRole('button', { name: 'Open assistant' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Could not start chat (503)');
 
@@ -187,7 +189,7 @@ describe('Chatbot', () => {
   });
 
   it('shows websocket failures', async () => {
-    render(<Chatbot />);
+    render(<Chatbot selectedTeam={null} />);
     const socket = await openReadyChat();
     socket.onerror?.();
     expect(await screen.findByRole('alert')).toHaveTextContent('Chat connection failed');

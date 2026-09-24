@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type Dispatch, type SetStateAction, useEffect, useState } from 'react';
 
 import { fetchTeams, fetchTeamStories, type Story } from '@/api/teams';
 
@@ -10,11 +10,20 @@ const DEFAULT_NOTIFY_MESSAGE =
   'High priority execution risks detected. Please review open PRs and stalled items, and help unblock owners today.';
 
 // Jira's workflow progression, used to order the story list (unlisted statuses sort just before "Under Consideration").
-const STATUS_ORDER = ['Ready For PO Review', 'In Development', 'In Progress', 'To Do', 'Backlog', 'Under Consideration'];
+const STATUS_ORDER = [
+  'Ready For PO Review',
+  'In Development',
+  'In Progress',
+  'To Do',
+  'Backlog',
+  'Under Consideration',
+];
 const UNKNOWN_STATUS_RANK = STATUS_ORDER.length - 1;
 
 const statusRank = (status: string): number => {
-  const index = STATUS_ORDER.findIndex((candidate) => candidate.toLowerCase() === status.toLowerCase());
+  const index = STATUS_ORDER.findIndex(
+    (candidate) => candidate.toLowerCase() === status.toLowerCase()
+  );
   return index === -1 ? UNKNOWN_STATUS_RANK : index;
 };
 
@@ -31,7 +40,11 @@ const fallbackStories = (team: string): Story[] => [
     last_activity: 'Jamie Lee changed status from To Do to In Progress 2 hours ago',
     branches: ['feature/ex-101-onboarding-gaps'],
     pull_requests: [
-      { title: 'Add onboarding gap analysis', url: 'https://github.com/example/repo/pull/101', status: 'Open' },
+      {
+        title: 'Add onboarding gap analysis',
+        url: 'https://github.com/example/repo/pull/101',
+        status: 'Open',
+      },
     ],
   },
   {
@@ -51,7 +64,11 @@ const fallbackStories = (team: string): Story[] => [
     last_activity: 'Morgan Diaz resolved this issue 3 days ago',
     branches: ['feature/ex-103-dashboard-beta'],
     pull_requests: [
-      { title: 'Dashboard beta rollout', url: 'https://github.com/example/repo/pull/103', status: 'Merged' },
+      {
+        title: 'Dashboard beta rollout',
+        url: 'https://github.com/example/repo/pull/103',
+        status: 'Merged',
+      },
     ],
   },
 ];
@@ -65,16 +82,21 @@ const priorities = [
   { title: 'Prepare stakeholder update', owner: 'You', status: 'Ready' },
 ];
 
-export const TeamsLanding = () => {
+interface TeamsLandingProps {
+  selectedTeam: string | null;
+  onSelectedTeamChange: Dispatch<SetStateAction<string | null>>;
+}
+
+export const TeamsLanding = ({ selectedTeam, onSelectedTeamChange }: TeamsLandingProps) => {
   const [teams, setTeams] = useState<string[]>([]);
   const [state, setState] = useState<LoadState>('loading');
   const [usingFallback, setUsingFallback] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const [stories, setStories] = useState<Story[]>([]);
   const [storiesTeam, setStoriesTeam] = useState<string | null>(null);
   const [storiesUsingFallback, setStoriesUsingFallback] = useState(false);
   const [storiesCollapsed, setStoriesCollapsed] = useState(false);
-  const storiesState: LoadState = selectedTeam !== null && storiesTeam !== selectedTeam ? 'loading' : 'ready';
+  const storiesState: LoadState =
+    selectedTeam !== null && storiesTeam !== selectedTeam ? 'loading' : 'ready';
   const [notifyState, setNotifyState] = useState<NotifyState>('idle');
   const [notifyMessage, setNotifyMessage] = useState('');
 
@@ -86,20 +108,20 @@ export const TeamsLanding = () => {
         if (cancelled) return;
         setTeams(result);
         setState('ready');
-        setSelectedTeam((current) => current ?? result[0] ?? null);
+        onSelectedTeamChange((current) => current ?? result[0] ?? null);
       })
       .catch(() => {
         if (cancelled) return;
         setTeams(FALLBACK_TEAMS);
         setUsingFallback(true);
         setState('ready');
-        setSelectedTeam((current) => current ?? FALLBACK_TEAMS[0] ?? null);
+        onSelectedTeamChange((current) => current ?? FALLBACK_TEAMS[0] ?? null);
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [onSelectedTeamChange]);
 
   useEffect(() => {
     if (!selectedTeam) return;
@@ -126,7 +148,11 @@ export const TeamsLanding = () => {
 
   const sortedStories = stories
     .filter((story) => !HIDDEN_STATUSES.has(story.status.toLowerCase()))
-    .sort((a, b) => statusRank(a.status) - statusRank(b.status) || (a.assignee ?? 'Unassigned').localeCompare(b.assignee ?? 'Unassigned'));
+    .sort(
+      (a, b) =>
+        statusRank(a.status) - statusRank(b.status) ||
+        (a.assignee ?? 'Unassigned').localeCompare(b.assignee ?? 'Unassigned')
+    );
 
   const sendNotify = async () => {
     setNotifyState('loading');
@@ -191,7 +217,7 @@ export const TeamsLanding = () => {
                     type="button"
                     className={`team-option${team === selectedTeam ? ' team-option-selected' : ''}`}
                     aria-pressed={team === selectedTeam}
-                    onClick={() => setSelectedTeam(team)}
+                    onClick={() => onSelectedTeamChange(team)}
                   >
                     {team}
                   </button>
@@ -259,49 +285,55 @@ export const TeamsLanding = () => {
                           Showing placeholder stories until Jira is connected.
                         </p>
                       )}
-                      {storiesState === 'loading' && <p className="team-picker-status">Loading stories…</p>}
+                      {storiesState === 'loading' && (
+                        <p className="team-picker-status">Loading stories…</p>
+                      )}
                       {storiesState === 'ready' && stories.length === 0 && (
                         <p className="team-picker-status">No stories assigned to this team.</p>
                       )}
                       {storiesState === 'ready' && stories.length > 0 && (
                         <ul className="story-list">
-                      {sortedStories.map((story) => (
-                        <li key={story.key} className="story-card">
-                          <div className="story-card-header">
-                            <span className="story-key">{story.key}</span>
-                            <span
-                              className={`status status-${story.status.toLowerCase().replace(/\s+/g, '-')}`}
-                            >
-                              {story.status}
-                            </span>
-                          </div>
-                          <p className="story-summary">{story.summary}</p>
-                          <p className="story-meta">Assignee: {story.assignee ?? 'Unassigned'}</p>
-                          {story.last_activity && <p className="story-activity">{story.last_activity}</p>}
-                          {(story.branches.length > 0 || story.pull_requests.length > 0) && (
-                            <div className="story-dev-links">
-                              {story.branches.map((branch) => (
-                                <span key={branch} className="dev-chip dev-chip-branch">
-                                  {branch}
-                                </span>
-                              ))}
-                              {story.pull_requests.map((pr) => (
-                                <a
-                                  key={pr.url}
-                                  href={pr.url}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="dev-chip dev-chip-pr"
+                          {sortedStories.map((story) => (
+                            <li key={story.key} className="story-card">
+                              <div className="story-card-header">
+                                <span className="story-key">{story.key}</span>
+                                <span
+                                  className={`status status-${story.status.toLowerCase().replace(/\s+/g, '-')}`}
                                 >
-                                  {pr.title} · {pr.status}
-                                </a>
-                              ))}
-                            </div>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                                  {story.status}
+                                </span>
+                              </div>
+                              <p className="story-summary">{story.summary}</p>
+                              <p className="story-meta">
+                                Assignee: {story.assignee ?? 'Unassigned'}
+                              </p>
+                              {story.last_activity && (
+                                <p className="story-activity">{story.last_activity}</p>
+                              )}
+                              {(story.branches.length > 0 || story.pull_requests.length > 0) && (
+                                <div className="story-dev-links">
+                                  {story.branches.map((branch) => (
+                                    <span key={branch} className="dev-chip dev-chip-branch">
+                                      {branch}
+                                    </span>
+                                  ))}
+                                  {story.pull_requests.map((pr) => (
+                                    <a
+                                      key={pr.url}
+                                      href={pr.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="dev-chip dev-chip-pr"
+                                    >
+                                      {pr.title} · {pr.status}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </>
                   )}
                 </section>

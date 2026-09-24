@@ -750,6 +750,36 @@ td {
   border-top: 1px solid #e2e8e5;
   background: #fff;
 }
+.chat-context {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 9px;
+  overflow: hidden;
+  align-items: center;
+  border: 1px solid #c9ddd5;
+  border-radius: 8px;
+  color: #285d4d;
+  background: #edf6f2;
+  font-size: 11px;
+}
+.chat-context span,
+.chat-context strong {
+  padding: 5px 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-context span {
+  border-right: 1px solid #c9ddd5;
+  color: #52756a;
+}
+.chat-context strong {
+  font-weight: 700;
+}
+.chat-composer:has(.chat-context) .composer-action {
+  top: 54px;
+}
 .chat-composer textarea {
   display: block;
   width: 100%;

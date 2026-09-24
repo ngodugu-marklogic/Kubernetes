@@ -49,7 +49,9 @@ def test_agent_conversation_survives_restart_without_identity(tmp_path):
 def test_notify_endpoint_sends_teams_alert(tmp_path, monkeypatch):
     import team_partner.app as app_module
 
-    async def fake_post_teams_webhook(url: str, message: str, title: str | None = None) -> TeamsAlertResult:
+    async def fake_post_teams_webhook(
+        url: str, message: str, title: str | None = None, bearer_token: str | None = None
+    ) -> TeamsAlertResult:
         assert url == "https://example.invalid/webhook"
         assert title == "Execution Partner Alert"
         assert "High priority" in message

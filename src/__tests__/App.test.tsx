@@ -52,6 +52,12 @@ describe('App', () => {
   it('sends a generic teams notification when notify button is clicked', async () => {
     const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
+      if (url.includes('/stories')) {
+        return {
+          ok: true,
+          json: async () => ({ stories: [] }),
+        } as Response;
+      }
       if (url.includes('/api/v1/teams')) {
         return {
           ok: true,

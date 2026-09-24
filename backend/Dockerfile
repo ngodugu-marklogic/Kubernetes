@@ -3,8 +3,8 @@ FROM python:3.14-slim
 ENV PYTHONUNBUFFERED=1
 WORKDIR /app
 
-# uv needs Git to fetch the pinned Hyperforge source.
-RUN apt-get update && apt-get install -y --no-install-recommends git \
+# uv needs Git to fetch the pinned Hyperforge source. The agent uses gh for GitHub queries.
+RUN apt-get update && apt-get install -y --no-install-recommends gh git \
     && rm -rf /var/lib/apt/lists/*
 
 # Pin uv independently of changes to application dependencies.

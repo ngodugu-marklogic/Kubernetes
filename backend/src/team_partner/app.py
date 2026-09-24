@@ -54,7 +54,12 @@ async def notify_team(body: NotifyRequest, request: Request) -> TeamsAlertResult
     if not webhook_url:
         raise HTTPException(400, "No Teams webhook configured. Set TEAMS_WEBHOOK_URL or provide webhook_url.")
     message = body.message or DEFAULT_NOTIFY_MESSAGE
-    result = await post_teams_webhook(webhook_url, message, body.title)
+    result = await post_teams_webhook(
+        webhook_url,
+        message,
+        body.title,
+        bearer_token=settings.teams_webhook_bearer_token,
+    )
     if not result.delivered:
         raise HTTPException(502, result.message)
     return result

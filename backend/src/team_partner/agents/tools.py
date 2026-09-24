@@ -100,12 +100,20 @@ async def run_cli(executable: str, args: list[str]) -> CLIResult:
     )
 
 
-async def post_teams_webhook(url: str, message: str, title: str | None = None) -> TeamsAlertResult:
+async def post_teams_webhook(
+    url: str,
+    message: str,
+    title: str | None = None,
+    bearer_token: str | None = None,
+) -> TeamsAlertResult:
     payload = {"text": f"**{title}**\n\n{message}" if title else message}
     body = json.dumps(payload).encode("utf-8")
 
     def send_request() -> TeamsAlertResult:
-        request = Request(url, data=body, method="POST", headers={"Content-Type": "application/json"})
+        headers = {"Content-Type": "application/json"}
+        if bearer_token:
+            headers["Authorization"] = f"Bearer {bearer_token}"
+        request = Request(url, data=body, method="POST", headers=headers)
         try:
             with urlopen(request, timeout=10) as response:
                 status = getattr(response, "status", None)
@@ -162,7 +170,12 @@ def create_team_tools(factory: sessionmaker[Session], settings: EnvSettings) -> 
                 status_code=None,
                 message="No Teams webhook URL configured. Set TEAMS_WEBHOOK_URL or provide webhook_url in the tool call.",
             )
-        return await post_teams_webhook(webhook_url, input_value.message, input_value.title)
+        return await post_teams_webhook(
+            webhook_url,
+            input_value.message,
+            input_value.title,
+            bearer_token=settings.teams_webhook_bearer_token,
+        )
 
     return (
         HarnessTool(

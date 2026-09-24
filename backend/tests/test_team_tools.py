@@ -207,3 +207,44 @@ def test_agent_sends_teams_alert_via_webhook(tmp_path, monkeypatch):
             "status_code": 200,
             "message": "Alert sent to Teams",
         }
+
+
+def test_agent_sends_teams_alert_with_bearer_token(tmp_path, monkeypatch):
+    from team_partner.agents import tools as tools_module
+
+    class DummyResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_urlopen(request, timeout):
+        assert request.full_url == "https://example.invalid/webhook"
+        assert request.get_header("Authorization") == "Bearer test-token"
+        assert timeout == 10
+        return DummyResponse()
+
+    monkeypatch.setattr(tools_module, "urlopen", fake_urlopen)
+
+    settings = EnvSettings(
+        database_url=f"sqlite:///{tmp_path / 'team.db'}",
+        teams_webhook_url="https://example.invalid/webhook",
+        teams_webhook_bearer_token="test-token",
+        _env_file=None,
+    )
+    with TestClient(create_app(settings, model_client=TeamsAlertModelClient())) as client:
+        session_id = client.post("/api/v1/agents/sessions", json={}).json()["id"]
+        events = run_turn(client, session_id, "Send a Teams alert")
+        result = next(
+            e["payload"]["result"]
+            for e in events
+            if e["type"] == "tool.completed" and e["payload"]["tool"] == "teams_send_alert"
+        )
+        assert result == {
+            "delivered": True,
+            "status_code": 200,
+            "message": "Alert sent to Teams",
+        }

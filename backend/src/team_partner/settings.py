@@ -14,6 +14,7 @@ class EnvSettings(BaseSettings):
     nua_api_uri: str = "https://aws-us-east-2-1.rag.progress.cloud"
     default_chat_model: str = "chatgpt-5.6-sol"
     teams_webhook_url: str | None = None
+    teams_webhook_bearer_token: str | None = None
 
 
 env_settings = EnvSettings()

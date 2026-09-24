@@ -32,6 +32,8 @@ environment variables (or `ENV_FILE` to select an env file): `HTTP_HOST`,
 `HTTP_PORT`, `DEBUG`, `DATABASE_URL` (SQLite URL, default
 `sqlite:///./team_partner.db`), `NUA_API_KEY`, `NUA_API_URI`,
 `DEFAULT_CHAT_MODEL`, and optional `TEAMS_WEBHOOK_URL` for Teams alerts.
+For protected Power Automate endpoints that require auth, set
+`TEAMS_WEBHOOK_BEARER_TOKEN` to send `Authorization: Bearer <token>`.
 The SQLite schema is initialized at startup. Database files and `.env` are
 ignored by Git.
 

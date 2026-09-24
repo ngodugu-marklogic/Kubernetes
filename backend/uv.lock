@@ -63,7 +63,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
-    { name = "hyperforge", specifier = "==1.0.0.post380" },
+    { name = "hyperforge", git = "https://github.com/nuclia/hyperforge.git?subdirectory=hyperforge&rev=f93583228b914d6b764e50874308b44dc5655265" },
     { name = "pydantic-settings", specifier = ">=2.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15" },
@@ -98,9 +98,9 @@ name = "aiologic"
 version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "sniffio" },
+    { name = "sniffio", marker = "python_full_version < '3.13'" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
-    { name = "wrapt" },
+    { name = "wrapt", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f1/7a/d51f2fde1e8ae8a83431f8e97b7a71e9358cdb1d4d2ce6be387fa44d68de/aiologic-0.17.1.tar.gz", hash = "sha256:2e1b93b9e88ced318c2a63ad7b382688f40cbfe40e3d42258d49dc9c5aea179d", size = 252354, upload-time = "2026-06-27T20:41:33.25Z" }
 wheels = [
@@ -517,7 +517,7 @@ name = "culsans"
 version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "aiologic" },
+    { name = "aiologic", marker = "python_full_version < '3.13'" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d9/e3/49afa1bc180e0d28008ec6bcdf82a4072d1c7a41032b5b759b60814ca4b0/culsans-0.11.0.tar.gz", hash = "sha256:0b43d0d05dce6106293d114c86e3fb4bfc63088cfe8ff08ed3fe36891447fe33", size = 107546, upload-time = "2025-12-31T23:15:38.196Z" }
@@ -930,8 +930,8 @@ wheels = [
 
 [[package]]
 name = "hyperforge"
-version = "1.0.0.post380"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.0"
+source = { git = "https://github.com/nuclia/hyperforge.git?subdirectory=hyperforge&rev=f93583228b914d6b764e50874308b44dc5655265#f93583228b914d6b764e50874308b44dc5655265" }
 dependencies = [
     { name = "a2a-sdk", extra = ["grpc", "http-server"] },
     { name = "aiodns" },
@@ -968,22 +968,14 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d1/9d/1941907e86621c87f45601f3c5be4565a909cf77edf8dd0f9e31812ed16c/hyperforge-1.0.0.post380.tar.gz", hash = "sha256:42153623b9dc6f38d4057e40399a6e7e716747288e9e3b590ccfeac2007c4c2b", size = 305893, upload-time = "2026-09-21T11:45:53.65Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f2/4b/90bd2c807b3e05e9da014187e49dc4568b2ab88c77a7f3862a5015c73262/hyperforge-1.0.0.post380-py3-none-any.whl", hash = "sha256:e7bdc483a697c3d6fdfd0db357f6348f71331248fa73cc0965e10dbd2d41c71c", size = 355631, upload-time = "2026-09-21T11:45:51.694Z" },
-]
 
 [[package]]
 name = "hyperforge-restricted"
-version = "1.0.0.post128"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.0"
+source = { git = "https://github.com/nuclia/hyperforge.git?subdirectory=agents%2Frestricted&rev=f93583228b914d6b764e50874308b44dc5655265#f93583228b914d6b764e50874308b44dc5655265" }
 dependencies = [
     { name = "hyperforge" },
     { name = "restrictedpython" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/06/b4/788fc41bdd9efad69e9c5bfacee90d9ed9fa66c289f1a1385ef8b4c92fb4/hyperforge_restricted-1.0.0.post128.tar.gz", hash = "sha256:53ee7862ba32209ee43b9d53cb545c9c6a5989bc7de69bf53541040739f18592", size = 11087, upload-time = "2026-09-23T15:30:13.819Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/10/b714df1430f6b25419c766bd850fb7155b0d522a55d558c1fbcef8d6be54/hyperforge_restricted-1.0.0.post128-py3-none-any.whl", hash = "sha256:3f151b22683e7a6ad6461514eb59973d7ad58dc52a3c8eb5d2d491901c5e6c63", size = 10143, upload-time = "2026-09-23T15:30:12.698Z" },
 ]
 
 [[package]]

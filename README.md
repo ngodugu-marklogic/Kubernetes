@@ -40,7 +40,26 @@ The backend image includes `gh`. Set `GH_TOKEN` in the root `.env` to a fine-gra
 Use gh_cli with args ["pr","list","--repo","nuclia/data-platform","--limit","5","--json","number,title,state,author"]
 ```
 
-The Atlassian CLI (`acli`) is not included in the backend image; install and authenticate it separately before using the `acli` tool. For local Python development and API details, see [backend/README.md](backend/README.md).
+The backend image includes the Atlassian CLI (`acli`) and mounts the host's
+`~/.config/acli` directory by default. Set `ACLI_CONFIG_DIR` in the root `.env`
+if the host configuration is elsewhere. ACLI OAuth secrets on macOS are stored
+in Keychain and cannot be used by the Linux container, so authenticate an API
+token profile in the shared directory when needed:
+
+```bash
+docker compose run --rm -T backend acli jira auth login \
+  --site example.atlassian.net --email you@example.com --token < token.txt
+docker compose exec backend acli jira auth status
+```
+
+Run the end-to-end WebSocket and ACLI smoke test from `backend/`:
+
+```bash
+uv run --no-sync python ../scripts/test-agent-websocket.py
+uv run --no-sync python ../scripts/test-agent-websocket.py --require-authenticated
+```
+
+For local Python development and API details, see [backend/README.md](backend/README.md).
 
 ## Quality checks
 

@@ -9,11 +9,9 @@ services:
       - NET_RAW
     command: sh -lc "npm ci && npm run dev -- --port 4200 --host 0.0.0.0"
     environment:
-      VITE_BACKEND_URL: http://backend:8888
+      BACKEND_PROXY_TARGET: http://backend:8888
     ports:
       - '${FRONTEND_PORT:-4201}:4200'
-    environment:
-      BACKEND_PROXY_TARGET: http://backend:8888
     depends_on:
       backend:
         condition: service_healthy
@@ -40,6 +38,7 @@ services:
       - '${BACKEND_PORT:-8888}:8888'
     volumes:
       - backend_data:/app/data
+      - '${ACLI_CONFIG_DIR:-${HOME}/.config/acli}:/root/.config/acli'
     restart: unless-stopped
     healthcheck:
       test:

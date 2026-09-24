@@ -55,8 +55,9 @@ There is no authentication or identity requirement; conversations and memories
 are shared across API callers. Team scope is shared across conversations and survives
 restart. Ask the agent to add, update, remove or list the team scope. `gh_cli` and
 `acli` tools use separate argument strings (not shell commands), return exit status,
-stdout and stderr, and require the CLIs to be installed and authenticated in the
-backend process environment. The Docker image does not include those CLIs by default.
+stdout and stderr, and require the CLIs to be authenticated in the backend
+process environment. The Docker image includes both CLIs; Compose mounts the
+host ACLI configuration directory at `/root/.config/acli`.
 Custom `HarnessTool` implementations can also be passed to
 `team_partner.app.create_app(tools=...)` for additional integrations.
 
@@ -66,4 +67,3 @@ Custom `HarnessTool` implementations can also be passed to
   landing page. `create_app(team_provider=...)` accepts a `() -> list[str]` callable
   to source the list; it defaults to a placeholder until the Jira MCP integration
   supplies the real "Agile Team" field values.
-

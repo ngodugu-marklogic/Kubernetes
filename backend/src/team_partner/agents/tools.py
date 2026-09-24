@@ -151,7 +151,19 @@ async def post_teams_webhook(
     title: str | None = None,
     bearer_token: str | None = None,
 ) -> TeamsAlertResult:
-    payload = {"text": f"**{title}**\n\n{message}" if title else message}
+    plain_text = f"{title}\n\n{message}" if title else message
+    card_body = []
+    if title:
+        card_body.append({"type": "TextBlock", "text": title, "weight": "Bolder", "size": "Medium", "wrap": True})
+    card_body.append({"type": "TextBlock", "text": message, "wrap": True})
+    payload = {
+        "type": "AdaptiveCard",
+        "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+        "version": "1.4",
+        "body": card_body,
+        # Keep plain text for flows or actions that still map triggerBody().text.
+        "text": plain_text,
+    }
     body = json.dumps(payload).encode("utf-8")
 
     def send_request() -> TeamsAlertResult:

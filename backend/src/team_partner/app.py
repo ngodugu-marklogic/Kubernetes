@@ -45,8 +45,7 @@ def storage_for(app: FastAPI) -> SQLiteHarnessStorage:
 
 
 DEFAULT_NOTIFY_MESSAGE = (
-    "High priority execution risks detected. Please review open PRs and stalled items, "
-    "and help unblock owners today."
+    "High priority execution risks detected. Please review open PRs and stalled items, and help unblock owners today."
 )
 
 

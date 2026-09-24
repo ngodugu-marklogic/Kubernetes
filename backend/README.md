@@ -54,7 +54,7 @@ ignored by Git.
 There is no authentication or identity requirement; conversations and memories
 are shared across API callers. Team scope is shared across conversations and survives
 restart. Ask the agent to add, update, remove or list the team scope. `gh_cli` and
-`acli` tools use separate argument strings (not shell commands), return exit status,
+`acli` tools use separate argumentg strings (not shell commands), return exit status,
 stdout and stderr, and require the CLIs to be authenticated in the backend
 process environment. The Docker image includes both CLIs; Compose mounts the
 host ACLI configuration directory at `/root/.config/acli`.

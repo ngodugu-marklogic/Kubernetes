@@ -1,9 +1,12 @@
+import asyncio
 import os
 from collections.abc import AsyncIterator
 
+import httpx
 from fastapi.testclient import TestClient
 from hyperforge.harness_sdk import HarnessToolCall, ModelDelta
 
+from team_partner.agents.tools import JiraClient, JiraSearch
 from team_partner.app import create_app
 from team_partner.settings import EnvSettings
 
@@ -123,7 +126,7 @@ class CLIModelClient:
                         name="gh_cli",
                         arguments={"args": ["repo", "view", "example/platform; touch /tmp/should-not-run"]},
                     ),
-                    HarnessToolCall(name="acli", arguments={"args": ["jira", "workitem", "list"]}),
+                    HarnessToolCall(name="acli", arguments={"args": ["jira", "auth", "status"]}),
                 ]
             )
         else:
@@ -152,9 +155,9 @@ class TeamsAlertModelClient:
 def test_agent_proxies_clis_with_literal_arguments(tmp_path, monkeypatch):
     for executable in ("gh", "acli"):
         script = tmp_path / executable
-        script.write_text("#!/bin/sh\nprintf '%s\\n' \"$@\"\n")
+        script.write_text("#!/bin/sh\nprintf '%s\n' \"$@\"\n")
         script.chmod(0o755)
-    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("PATH", f"{tmpg_path}{os.pathsep}{os.environ['PATH']}")
     settings = EnvSettings(database_url=f"sqlite:///{tmp_path / 'team.db'}", _env_file=None)
     with TestClient(create_app(settings, model_client=CLIModelClient())) as client:
         session_id = client.post("/api/v1/agents/sessions", json={}).json()["id"]
@@ -166,7 +169,11 @@ def test_agent_proxies_clis_with_literal_arguments(tmp_path, monkeypatch):
                 "stdout": "repo\nview\nexample/platform; touch /tmp/should-not-run\n",
                 "stderr": "",
             },
-            "acli": {"exit_code": 0, "stdout": "jira\nworkitem\nlist\n", "stderr": ""},
+            "acli": {
+                "exit_code": 0,
+                "stdout": "jira\nauth\nstatus\n",
+                "stderr": "",
+            },
         }
 
 
@@ -248,3 +255,37 @@ def test_agent_sends_teams_alert_with_bearer_token(tmp_path, monkeypatch):
             "status_code": 200,
             "message": "Alert sent to Teams",
         }
+
+
+def test_jira_client_uses_api_token_and_scoped_search():
+    def handle_request(request: httpx.Request) -> httpx.Response:
+        assert request.url == "https://example.atlassian.net/rest/api/3/search/jql"
+        assert request.headers["Authorization"].startswith("Basic ")
+        assert request.read() == (
+            b'{"jql":"project = PLAT ORDER BY updated DESC","fields":["summary","status"],"maxResults":10}'
+        )
+        return httpx.Response(
+            200,
+            json={"issues": [{"id": "10001", "key": "PLAT-1"}], "isLast": True},
+        )
+
+    settings = EnvSettings(
+        jira_api_token="jira-token",
+        jira_email="developer@example.com",
+        jira_base_url="https://example.atlassian.net",
+        _env_file=None,
+    )
+    client = JiraClient(settings, httpx.MockTransport(handle_request))
+
+    result = asyncio.run(
+        client.search(
+            JiraSearch(
+                jql="project = PLAT ORDER BY updated DESC",
+                fields=["summary", "status"],
+                max_results=10,
+            )
+        )
+    )
+
+    assert result.issues == [{"id": "10001", "key": "PLAT-1"}]
+    assert result.is_last is True

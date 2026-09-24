@@ -42,7 +42,7 @@ Run targeted checks for the files changed. The backend has its own `pyproject.to
 ## Backend conventions
 
 - Keep HTTP/WebSocket handlers in `app.py` focused on request handling; keep agent construction in `agents/runtime.py` and persistence in `agents/storage.py` and `db.py`.
-- Use the released Hyperforge dependency pinned in `backend/pyproject.toml` and its `hyperforge.harness_sdk` API. Pass new integrations as `HarnessTool` instances through `create_app(tools=...)` rather than coupling the API to a particular connector.
+- Use the Hyperforge Git commit pinned in `backend/pyproject.toml` and `backend/uv.lock` (on the `nuclia/hyperforge` `execution-partner` branch) and its `hyperforge.harness_sdk` API. Pass new integrations as `HarnessTool` instances through `create_app(tools=...)` rather than coupling the API to a particular connector.
 - SQLite is the current store. Conversation events must remain ordered and replayable after restart. Use `backend/tests/test_agent_api.py` as the existing end-to-end test pattern, with a stub model client instead of live model calls.
 - There is currently **no authentication or user identity requirement**. Do not add required `user_id` parameters or auth dependencies to agent endpoints unless requested.
 - The WebSocket at `/api/v1/agents/sessions/{session_id}/ws` replays events before accepting `prompt`, `steer`, `interrupt`, and `feedback_response` commands. Keep the existing event envelope and session lifecycle compatible when extending it.

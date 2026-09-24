@@ -5,11 +5,15 @@ description = "AI team partner and scrum master API"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
-    "hyperforge==1.0.0.post380",
+    "hyperforge",
     "pydantic-settings>=2.10",
     "sqlalchemy>=2.0,<3",
     "uvicorn>=0.35",
 ]
+
+[tool.uv.sources]
+# Project branch: https://github.com/nuclia/hyperforge/tree/execution-partner
+hyperforge = { git = "https://github.com/nuclia/hyperforge.git", rev = "f93583228b914d6b764e50874308b44dc5655265", subdirectory = "hyperforge" }
 
 [project.optional-dependencies]
 dev = ["httpx>=0.28", "pytest>=8", "ruff>=0.15"]

@@ -11,6 +11,12 @@ can run the host's `gh` and `acli` commands to investigate that saved scope.
 
 Requires Python 3.12+ and [uv](https://docs.astral.sh/uv/).
 
+Hyperforge comes from the [`execution-partner` branch](https://github.com/nuclia/hyperforge/tree/execution-partner)
+of `nuclia/hyperforge`. The exact commit is pinned in `pyproject.toml` and
+`uv.lock`; `uv sync --locked` (including in the backend Docker image) installs
+that commit. When customizing Hyperforge, push changes to that branch, update
+the `rev` in `pyproject.toml`, and run `uv lock` from this directory.
+
 ```sh
 cd backend
 uv sync --extra dev

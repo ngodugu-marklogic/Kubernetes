@@ -33,6 +33,13 @@ class ScopeModelClient:
                         name="save_github_repo",
                         arguments={"full_name": "example/platform"},
                     ),
+                    HarnessToolCall(
+                        name="save_teams_channel",
+                        arguments={
+                            "channel_id": "team-general",
+                            "name": "General",
+                        },
+                    ),
                 ]
             )
         elif self.calls == 2:
@@ -68,6 +75,7 @@ def test_agent_manages_team_scope_across_restart(tmp_path):
             "save_team_member",
             "save_jira_team",
             "save_github_repo",
+            "save_teams_channel",
         }
 
     with TestClient(create_app(settings, model_client=model)) as client:
@@ -92,6 +100,13 @@ def test_agent_manages_team_scope_across_restart(tmp_path):
                 }
             ],
             "github_repos": [{"full_name": "example/platform"}],
+            "teams_channels": [
+                {
+                    "channel_id": "team-general",
+                    "name": "General",
+                    "webhook_url": None,
+                }
+            ],
         }
 
 
@@ -115,6 +130,25 @@ class CLIModelClient:
             yield ModelDelta(text="Commands finished.")
 
 
+class TeamsAlertModelClient:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def stream(self, **kwargs) -> AsyncIterator[ModelDelta]:
+        self.calls += 1
+        if self.calls == 1:
+            yield ModelDelta(
+                tool_calls=[
+                    HarnessToolCall(
+                        name="teams_send_alert",
+                        arguments={"message": "Stale ticket detected", "title": "Execution Partner"},
+                    )
+                ]
+            )
+        else:
+            yield ModelDelta(text="Alert dispatched.")
+
+
 def test_agent_proxies_clis_with_literal_arguments(tmp_path, monkeypatch):
     for executable in ("gh", "acli"):
         script = tmp_path / executable
@@ -133,4 +167,84 @@ def test_agent_proxies_clis_with_literal_arguments(tmp_path, monkeypatch):
                 "stderr": "",
             },
             "acli": {"exit_code": 0, "stdout": "jira\nworkitem\nlist\n", "stderr": ""},
+        }
+
+
+def test_agent_sends_teams_alert_via_webhook(tmp_path, monkeypatch):
+    from team_partner.agents import tools as tools_module
+
+    class DummyResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_urlopen(request, timeout):
+        assert request.full_url == "https://example.invalid/webhook"
+        assert timeout == 10
+        return DummyResponse()
+
+    monkeypatch.setattr(tools_module, "urlopen", fake_urlopen)
+
+    settings = EnvSettings(
+        database_url=f"sqlite:///{tmp_path / 'team.db'}",
+        teams_webhook_url="https://example.invalid/webhook",
+        _env_file=None,
+    )
+    with TestClient(create_app(settings, model_client=TeamsAlertModelClient())) as client:
+        session_id = client.post("/api/v1/agents/sessions", json={}).json()["id"]
+        events = run_turn(client, session_id, "Send a Teams alert")
+        result = next(
+            e["payload"]["result"]
+            for e in events
+            if e["type"] == "tool.completed" and e["payload"]["tool"] == "teams_send_alert"
+        )
+        assert result == {
+            "delivered": True,
+            "status_code": 200,
+            "message": "Alert sent to Teams",
+        }
+
+
+def test_agent_sends_teams_alert_with_bearer_token(tmp_path, monkeypatch):
+    from team_partner.agents import tools as tools_module
+
+    class DummyResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_urlopen(request, timeout):
+        assert request.full_url == "https://example.invalid/webhook"
+        assert request.get_header("Authorization") == "Bearer test-token"
+        assert timeout == 10
+        return DummyResponse()
+
+    monkeypatch.setattr(tools_module, "urlopen", fake_urlopen)
+
+    settings = EnvSettings(
+        database_url=f"sqlite:///{tmp_path / 'team.db'}",
+        teams_webhook_url="https://example.invalid/webhook",
+        teams_webhook_bearer_token="test-token",
+        _env_file=None,
+    )
+    with TestClient(create_app(settings, model_client=TeamsAlertModelClient())) as client:
+        session_id = client.post("/api/v1/agents/sessions", json={}).json()["id"]
+        events = run_turn(client, session_id, "Send a Teams alert")
+        result = next(
+            e["payload"]["result"]
+            for e in events
+            if e["type"] == "tool.completed" and e["payload"]["tool"] == "teams_send_alert"
+        )
+        assert result == {
+            "delivered": True,
+            "status_code": 200,
+            "message": "Alert sent to Teams",
         }

@@ -1,4 +1,7 @@
 import asyncio
+import json
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from hyperforge.harness_sdk import HarnessTool, ToolCallContext
 from pydantic import BaseModel, Field
@@ -10,7 +13,9 @@ from team_partner.agents.team_context import (
     TeamContext,
     TeamContextStorage,
     TeamMember,
+    TeamsChannel,
 )
+from team_partner.settings import EnvSettings
 
 
 class RemoveMember(BaseModel):
@@ -23,6 +28,10 @@ class RemoveJiraTeam(BaseModel):
 
 class RemoveGitHubRepo(BaseModel):
     full_name: str
+
+
+class RemoveTeamsChannel(BaseModel):
+    channel_id: str
 
 
 class Removed(BaseModel):
@@ -40,6 +49,18 @@ class CLIResult(BaseModel):
     exit_code: int | None
     stdout: str
     stderr: str
+
+
+class TeamsAlert(BaseModel):
+    message: str = Field(min_length=1)
+    title: str | None = None
+    webhook_url: str | None = None
+
+
+class TeamsAlertResult(BaseModel):
+    delivered: bool
+    status_code: int | None = None
+    message: str
 
 
 class EmptyInput(BaseModel):
@@ -79,7 +100,33 @@ async def run_cli(executable: str, args: list[str]) -> CLIResult:
     )
 
 
-def create_team_tools(factory: sessionmaker[Session]) -> tuple[HarnessTool, ...]:
+async def post_teams_webhook(
+    url: str,
+    message: str,
+    title: str | None = None,
+    bearer_token: str | None = None,
+) -> TeamsAlertResult:
+    payload = {"text": f"**{title}**\n\n{message}" if title else message}
+    body = json.dumps(payload).encode("utf-8")
+
+    def send_request() -> TeamsAlertResult:
+        headers = {"Content-Type": "application/json"}
+        if bearer_token:
+            headers["Authorization"] = f"Bearer {bearer_token}"
+        request = Request(url, data=body, method="POST", headers=headers)
+        try:
+            with urlopen(request, timeout=10) as response:
+                status = getattr(response, "status", None)
+                return TeamsAlertResult(delivered=True, status_code=status, message="Alert sent to Teams")
+        except HTTPError as exc:
+            return TeamsAlertResult(delivered=False, status_code=exc.code, message=f"Teams webhook returned HTTP {exc.code}")
+        except URLError as exc:
+            return TeamsAlertResult(delivered=False, status_code=None, message=f"Teams webhook failed: {exc.reason}")
+
+    return await asyncio.to_thread(send_request)
+
+
+def create_team_tools(factory: sessionmaker[Session], settings: EnvSettings) -> tuple[HarnessTool, ...]:
     storage = TeamContextStorage(factory)
 
     async def get_team_context(context: ToolCallContext, input_value: EmptyInput) -> TeamContext:
@@ -103,17 +150,38 @@ def create_team_tools(factory: sessionmaker[Session]) -> tuple[HarnessTool, ...]
     async def remove_github_repo(context: ToolCallContext, input_value: RemoveGitHubRepo) -> Removed:
         return Removed(removed=storage.remove_github_repo(input_value.full_name))
 
+    async def save_teams_channel(context: ToolCallContext, input_value: TeamsChannel) -> TeamsChannel:
+        return storage.save_teams_channel(input_value)
+
+    async def remove_teams_channel(context: ToolCallContext, input_value: RemoveTeamsChannel) -> Removed:
+        return Removed(removed=storage.remove_teams_channel(input_value.channel_id))
+
     async def gh_cli(context: ToolCallContext, input_value: CLICommand) -> CLIResult:
         return await run_cli("gh", input_value.args)
 
     async def acli(context: ToolCallContext, input_value: CLICommand) -> CLIResult:
         return await run_cli("acli", input_value.args)
 
+    async def teams_send_alert(context: ToolCallContext, input_value: TeamsAlert) -> TeamsAlertResult:
+        webhook_url = input_value.webhook_url or settings.teams_webhook_url
+        if not webhook_url:
+            return TeamsAlertResult(
+                delivered=False,
+                status_code=None,
+                message="No Teams webhook URL configured. Set TEAMS_WEBHOOK_URL or provide webhook_url in the tool call.",
+            )
+        return await post_teams_webhook(
+            webhook_url,
+            input_value.message,
+            input_value.title,
+            bearer_token=settings.teams_webhook_bearer_token,
+        )
+
     return (
         HarnessTool(
             "get_team_context",
             get_team_context,
-            "Read the team's saved members, Jira boards, and GitHub repositories.",
+            "Read the team's saved members, Jira boards, GitHub repositories, and Teams channels.",
         ),
         HarnessTool(
             "save_team_member",
@@ -142,6 +210,16 @@ def create_team_tools(factory: sessionmaker[Session]) -> tuple[HarnessTool, ...]
             "Stop following a GitHub repository by owner/repo.",
         ),
         HarnessTool(
+            "save_teams_channel",
+            save_teams_channel,
+            "Add or update a Microsoft Teams channel to follow, including optional incoming webhook URL for alerts.",
+        ),
+        HarnessTool(
+            "remove_teams_channel",
+            remove_teams_channel,
+            "Stop following a Microsoft Teams channel by channel_id.",
+        ),
+        HarnessTool(
             "gh_cli",
             gh_cli,
             "Run the machine's authenticated gh CLI. Supply argv as separate strings; use saved repositories to scope queries. Results include exit code and output.",
@@ -150,5 +228,10 @@ def create_team_tools(factory: sessionmaker[Session]) -> tuple[HarnessTool, ...]
             "acli",
             acli,
             "Run the machine's authenticated acli Jira/Confluence CLI. Supply argv as separate strings; use saved Jira boards to scope queries. Results include exit code and output.",
+        ),
+        HarnessTool(
+            "teams_send_alert",
+            teams_send_alert,
+            "Send an alert message to Microsoft Teams using an incoming webhook URL.",
         ),
     )

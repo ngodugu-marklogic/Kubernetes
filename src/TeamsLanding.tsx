@@ -3,6 +3,11 @@ import { useEffect, useState } from 'react';
 import { fetchTeams, fetchTeamStories, type Story } from '@/api/teams';
 
 type LoadState = 'loading' | 'ready';
+type NotifyState = 'idle' | 'loading' | 'success' | 'error';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8888';
+const DEFAULT_NOTIFY_MESSAGE =
+  'High priority execution risks detected. Please review open PRs and stalled items, and help unblock owners today.';
 
 // Jira's workflow progression, used to order the story list (unlisted statuses sort just before "Under Consideration").
 const STATUS_ORDER = ['Ready For PO Review', 'In Development', 'In Progress', 'To Do', 'Backlog', 'Under Consideration'];
@@ -70,6 +75,8 @@ export const TeamsLanding = () => {
   const [storiesUsingFallback, setStoriesUsingFallback] = useState(false);
   const [storiesCollapsed, setStoriesCollapsed] = useState(false);
   const storiesState: LoadState = selectedTeam !== null && storiesTeam !== selectedTeam ? 'loading' : 'ready';
+  const [notifyState, setNotifyState] = useState<NotifyState>('idle');
+  const [notifyMessage, setNotifyMessage] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -120,6 +127,34 @@ export const TeamsLanding = () => {
   const sortedStories = stories
     .filter((story) => !HIDDEN_STATUSES.has(story.status.toLowerCase()))
     .sort((a, b) => statusRank(a.status) - statusRank(b.status) || (a.assignee ?? 'Unassigned').localeCompare(b.assignee ?? 'Unassigned'));
+
+  const sendNotify = async () => {
+    setNotifyState('loading');
+    setNotifyMessage('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/alerts/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Execution Partner Alert',
+          message: DEFAULT_NOTIFY_MESSAGE,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(payload.detail || 'Failed to send Teams alert');
+      }
+
+      setNotifyState('success');
+      setNotifyMessage('Notification sent to Teams.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to send Teams alert';
+      setNotifyState('error');
+      setNotifyMessage(message);
+    }
+  };
 
   return (
     <main className="shell">
@@ -174,12 +209,28 @@ export const TeamsLanding = () => {
                   <p className="eyebrow">Team</p>
                   <h2 id="team-detail-heading">{selectedTeam}</h2>
                 </div>
-                <button type="button" className="primary-action">
-                  Add priority
-                </button>
+                <div className="topbar-actions">
+                  <button type="button" className="primary-action">
+                    Add priority
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-action"
+                    onClick={sendNotify}
+                    disabled={notifyState === 'loading'}
+                  >
+                    {notifyState === 'loading' ? 'Sending...' : 'Notify Team'}
+                  </button>
+                </div>
               </div>
 
               <div className="team-detail-body">
+                {notifyState !== 'idle' ? (
+                  <p className={`notify-message notify-${notifyState}`} role="status">
+                    {notifyMessage}
+                  </p>
+                ) : null}
+
                 <section className="worklist" aria-labelledby="stories-heading">
                   <div className="section-heading">
                     <div className="heading-with-toggle">

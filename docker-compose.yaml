@@ -8,8 +8,13 @@ services:
     cap_drop:
       - NET_RAW
     command: sh -lc "npm ci && npm run dev -- --port 4200 --host 0.0.0.0"
+    environment:
+      BACKEND_PROXY_TARGET: http://backend:8888
     ports:
       - '${FRONTEND_PORT:-4201}:4200'
+    depends_on:
+      backend:
+        condition: service_healthy
     volumes:
       - .:/app
       - /app/node_modules
@@ -33,9 +38,16 @@ services:
       - '${BACKEND_PORT:-8888}:8888'
     volumes:
       - backend_data:/app/data
+      - '${ACLI_CONFIG_DIR:-${HOME}/.config/acli}:/root/.config/acli'
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8888/health')"]
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:8888/health')",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10

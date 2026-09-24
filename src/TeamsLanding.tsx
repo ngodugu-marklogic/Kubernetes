@@ -3,6 +3,11 @@ import { useEffect, useState } from 'react';
 import { fetchTeams } from '@/api/teams';
 
 type LoadState = 'loading' | 'ready';
+type NotifyState = 'idle' | 'loading' | 'success' | 'error';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8888';
+const DEFAULT_NOTIFY_MESSAGE =
+  'High priority execution risks detected. Please review open PRs and stalled items, and help unblock owners today.';
 
 // Shown until the Jira integration is connected and the API has real "Agile Team" data.
 const FALLBACK_TEAMS = ['Team Alpha', 'Team Bravo', 'Team Charlie'];
@@ -18,6 +23,8 @@ export const TeamsLanding = () => {
   const [state, setState] = useState<LoadState>('loading');
   const [usingFallback, setUsingFallback] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [notifyState, setNotifyState] = useState<NotifyState>('idle');
+  const [notifyMessage, setNotifyMessage] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -41,6 +48,34 @@ export const TeamsLanding = () => {
       cancelled = true;
     };
   }, []);
+
+  const sendNotify = async () => {
+    setNotifyState('loading');
+    setNotifyMessage('');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/v1/alerts/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Execution Partner Alert',
+          message: DEFAULT_NOTIFY_MESSAGE,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => ({}))) as { detail?: string };
+        throw new Error(payload.detail || 'Failed to send Teams alert');
+      }
+
+      setNotifyState('success');
+      setNotifyMessage('Notification sent to Teams.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to send Teams alert';
+      setNotifyState('error');
+      setNotifyMessage(message);
+    }
+  };
 
   return (
     <main className="shell">
@@ -95,12 +130,27 @@ export const TeamsLanding = () => {
                   <p className="eyebrow">Team</p>
                   <h2 id="team-detail-heading">{selectedTeam}</h2>
                 </div>
-                <button type="button" className="primary-action">
-                  Add priority
-                </button>
+                <div className="topbar-actions">
+                  <button type="button" className="primary-action">
+                    Add priority
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-action"
+                    onClick={sendNotify}
+                    disabled={notifyState === 'loading'}
+                  >
+                    {notifyState === 'loading' ? 'Sending...' : 'Notify Team'}
+                  </button>
+                </div>
               </div>
 
               <div className="team-detail-body">
+                {notifyState !== 'idle' ? (
+                  <p className={`notify-message notify-${notifyState}`} role="status">
+                    {notifyMessage}
+                  </p>
+                ) : null}
                 <section className="summary" aria-label="Execution summary">
                   <div>
                     <span>Active priorities</span>

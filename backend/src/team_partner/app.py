@@ -12,7 +12,7 @@ from pydantic import BaseModel
 
 from team_partner.agents.runtime import open_agent
 from team_partner.agents.storage import SQLiteHarnessStorage
-from team_partner.agents.tools import create_team_tools
+from team_partner.agents.tools import TeamsAlertResult, create_team_tools, post_teams_webhook
 from team_partner.db import create_database
 from team_partner.settings import EnvSettings, env_settings
 from team_partner.teams import TeamProvider, placeholder_team_provider
@@ -27,11 +27,37 @@ class CreateSessionRequest(BaseModel):
     title: str = "New conversation"
 
 
+class NotifyRequest(BaseModel):
+    message: str | None = None
+    title: str = "Execution Partner Alert"
+    webhook_url: str | None = None
+
+
 router = APIRouter(prefix="/api/v1/agents", tags=["agent"])
+alerts_router = APIRouter(prefix="/api/v1/alerts", tags=["alerts"])
 
 
 def storage_for(app: FastAPI) -> SQLiteHarnessStorage:
     return SQLiteHarnessStorage(app.state.session_factory)
+
+
+DEFAULT_NOTIFY_MESSAGE = (
+    "High priority execution risks detected. Please review open PRs and stalled items, "
+    "and help unblock owners today."
+)
+
+
+@alerts_router.post("/notify", response_model=TeamsAlertResult)
+async def notify_team(body: NotifyRequest, request: Request) -> TeamsAlertResult:
+    settings: EnvSettings = request.app.state.settings
+    webhook_url = body.webhook_url or settings.teams_webhook_url
+    if not webhook_url:
+        raise HTTPException(400, "No Teams webhook configured. Set TEAMS_WEBHOOK_URL or provide webhook_url.")
+    message = body.message or DEFAULT_NOTIFY_MESSAGE
+    result = await post_teams_webhook(webhook_url, message, body.title)
+    if not result.delivered:
+        raise HTTPException(502, result.message)
+    return result
 
 
 @router.post("/sessions", response_model=HarnessConversation, status_code=201)
@@ -183,7 +209,7 @@ def create_app(
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         engine, factory = create_database(settings.database_url)
         app.state.session_factory = factory
-        app.state.tools = (*create_team_tools(factory), *tools)
+        app.state.tools = (*create_team_tools(factory, settings), *tools)
         app.state.active_sessions = set()
         try:
             yield
@@ -197,11 +223,12 @@ def create_app(
     app.add_middleware(
         CORSMiddleware,
         allow_origins=FRONTEND_ORIGINS,
-        allow_methods=["GET"],
+        allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["*"],
     )
     app.include_router(router)
     app.include_router(teams_router)
+    app.include_router(alerts_router)
 
     @app.get("/health", include_in_schema=False)
     async def health() -> dict[str, str]:

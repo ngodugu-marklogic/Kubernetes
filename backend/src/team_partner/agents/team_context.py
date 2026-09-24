@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
-from team_partner.db import GitHubRepoRow, JiraTeamRow, TeamMemberRow, transaction
+from team_partner.db import GitHubRepoRow, JiraTeamRow, TeamMemberRow, TeamsChannelRow, transaction
 
 
 class TeamMember(BaseModel):
@@ -23,10 +23,17 @@ class GitHubRepo(BaseModel):
     full_name: str = Field(pattern=r"^[^/\s]+/[^/\s]+$")
 
 
+class TeamsChannel(BaseModel):
+    channel_id: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    webhook_url: str | None = None
+
+
 class TeamContext(BaseModel):
     members: list[TeamMember]
     jira_teams: list[JiraTeam]
     github_repos: list[GitHubRepo]
+    teams_channels: list[TeamsChannel]
 
 
 class TeamContextStorage:
@@ -49,6 +56,10 @@ class TeamContextStorage:
                 github_repos=[
                     GitHubRepo.model_validate(row, from_attributes=True)
                     for row in session.scalars(select(GitHubRepoRow).order_by(GitHubRepoRow.full_name))
+                ],
+                teams_channels=[
+                    TeamsChannel.model_validate(row, from_attributes=True)
+                    for row in session.scalars(select(TeamsChannelRow).order_by(TeamsChannelRow.channel_id))
                 ],
             )
 
@@ -98,6 +109,25 @@ class TeamContextStorage:
     def remove_github_repo(self, full_name: str) -> bool:
         with transaction(self.factory) as session:
             row = session.get(GitHubRepoRow, full_name)
+            if row is None:
+                return False
+            session.delete(row)
+        return True
+
+    def save_teams_channel(self, channel: TeamsChannel) -> TeamsChannel:
+        with transaction(self.factory) as session:
+            row = session.get(TeamsChannelRow, channel.channel_id)
+            if row is None:
+                row = TeamsChannelRow(**channel.model_dump())
+                session.add(row)
+            else:
+                for field in channel.model_fields_set - {"channel_id"}:
+                    setattr(row, field, getattr(channel, field))
+            return TeamsChannel.model_validate(row, from_attributes=True)
+
+    def remove_teams_channel(self, channel_id: str) -> bool:
+        with transaction(self.factory) as session:
+            row = session.get(TeamsChannelRow, channel_id)
             if row is None:
                 return False
             session.delete(row)

@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.BACKEND_PROXY_TARGET || 'http://localhost:8888',
+          target: env.BACKEND_PROXY_TARGET || process.env.VITE_BACKEND_URL || 'http://localhost:8888',
           changeOrigin: true,
           ws: true,
         },

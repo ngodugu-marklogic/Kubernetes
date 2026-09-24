@@ -63,6 +63,10 @@ h2 {
   gap: 24px;
   margin-bottom: 28px;
 }
+.topbar-actions {
+  display: flex;
+  gap: 10px;
+}
 .eyebrow {
   margin-bottom: 5px;
   color: #6a7580;
@@ -81,6 +85,41 @@ h2 {
 }
 .primary-action:hover {
   background: #105a44;
+}
+.secondary-action {
+  border: 1px solid #176b52;
+  border-radius: 6px;
+  padding: 10px 16px;
+  color: #176b52;
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+.secondary-action:hover {
+  background: #eef7f3;
+}
+.secondary-action:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.notify-message {
+  margin: -8px 0 16px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.notify-success {
+  color: #176b52;
+  background: #e8f2ee;
+}
+.notify-error {
+  color: #a53a32;
+  background: #fbeceb;
+}
+.notify-loading {
+  color: #6a7580;
+  background: #edf1f5;
 }
 .summary {
   margin-bottom: 22px;
@@ -677,6 +716,12 @@ td {
   .topbar,
   .section-heading {
     align-items: flex-start;
+  }
+  .topbar-actions {
+    width: 100%;
+  }
+  .topbar-actions button {
+    flex: 1;
   }
   .summary div {
     padding: 14px 12px;

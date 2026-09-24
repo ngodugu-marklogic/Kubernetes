@@ -68,6 +68,14 @@ class GitHubRepoRow(Base):
     full_name: Mapped[str] = mapped_column(String, primary_key=True)
 
 
+class TeamsChannelRow(Base):
+    __tablename__ = "teams_channels"
+
+    channel_id: Mapped[str] = mapped_column(String, primary_key=True)
+    name: Mapped[str] = mapped_column(String)
+    webhook_url: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
 def create_database(url: str) -> tuple[Engine, sessionmaker[Session]]:
     if not url.startswith("sqlite:"):
         raise ValueError("Only SQLite database URLs are supported")

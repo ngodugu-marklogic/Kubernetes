@@ -4,8 +4,10 @@ Python backend for an AI team partner and scrum master. The FastAPI service expo
 resumable Hyperforge agent conversations and stores conversation history, memories,
 and shared team scope in a local SQLite database. Agent tools manage team members
 (name, Jira account ID, GitHub login, ownership), Jira agile boards (board ID, name,
-optional project key and site URL), and GitHub repositories (owner/repo). The agent
-can run the host's `gh` and `acli` commands to investigate that saved scope.
+optional project key and site URL), GitHub repositories (owner/repo), and Teams
+channels (channel ID, name, optional webhook URL). The agent can run the host's
+`gh` and `acli` commands to investigate that saved scope and can send Teams alerts
+through incoming webhooks.
 
 ## Getting started
 
@@ -28,9 +30,10 @@ uv run team-partner-http
 The API is available at `http://127.0.0.1:8888/docs`. Configuration uses
 environment variables (or `ENV_FILE` to select an env file): `HTTP_HOST`,
 `HTTP_PORT`, `DEBUG`, `DATABASE_URL` (SQLite URL, default
-`sqlite:///./team_partner.db`), `NUA_API_KEY`, `NUA_API_URI`, and
-`DEFAULT_CHAT_MODEL`. The SQLite schema is initialized at startup. Database
-files and `.env` are ignored by Git.
+`sqlite:///./team_partner.db`), `NUA_API_KEY`, `NUA_API_URI`,
+`DEFAULT_CHAT_MODEL`, and optional `TEAMS_WEBHOOK_URL` for Teams alerts.
+The SQLite schema is initialized at startup. Database files and `.env` are
+ignored by Git.
 
 ## Agent API
 

@@ -149,6 +149,80 @@ td {
   background: #fbf3d8;
 }
 
+.teams-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid #d6dce1;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(41, 52, 61, 0.06);
+}
+.team-sidebar {
+  border-right: 1px solid #d6dce1;
+}
+.team-detail {
+  min-height: 260px;
+}
+.team-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+.team-picker-status,
+.team-detail-status {
+  padding: 20px;
+  color: #6c7780;
+  font-size: 14px;
+}
+.team-picker-status-error {
+  color: #a53a32;
+}
+.team-picker-status-notice {
+  color: #785a12;
+}
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 20px 20px;
+  list-style: none;
+}
+.team-option {
+  width: 100%;
+  border: 1px solid #d6dce1;
+  border-radius: 6px;
+  padding: 14px 16px;
+  color: #17202a;
+  background: #f7f8f9;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.team-option:hover {
+  border-color: #176b52;
+  background: #e8f2ee;
+}
+.team-option-selected {
+  border-color: #176b52;
+  color: #176b52;
+  background: #e8f2ee;
+}
+
+@media (max-width: 720px) {
+  .teams-layout {
+    grid-template-columns: 1fr;
+  }
+  .team-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #d6dce1;
+  }
+}
+
 @media (max-width: 640px) {
   .shell {
     width: calc(100% - 24px);

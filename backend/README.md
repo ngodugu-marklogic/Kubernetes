@@ -48,3 +48,11 @@ stdout and stderr, and require the CLIs to be installed and authenticated in the
 backend process environment. The Docker image does not include those CLIs by default.
 Custom `HarnessTool` implementations can also be passed to
 `team_partner.app.create_app(tools=...)` for additional integrations.
+
+## Teams API
+
+- `GET /api/v1/teams` returns `{"teams": [str, ...]}` for the frontend's team-picker
+  landing page. `create_app(team_provider=...)` accepts a `() -> list[str]` callable
+  to source the list; it defaults to a placeholder until the Jira MCP integration
+  supplies the real "Agile Team" field values.
+

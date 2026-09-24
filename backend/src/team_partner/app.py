@@ -6,6 +6,7 @@ from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI, HTTPException, Query, Request, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from hyperforge.harness_sdk import HarnessConversation, HarnessEvent, HarnessTool, ModelClient
 from pydantic import BaseModel
 
@@ -14,6 +15,10 @@ from team_partner.agents.storage import SQLiteHarnessStorage
 from team_partner.agents.tools import create_team_tools
 from team_partner.db import create_database
 from team_partner.settings import EnvSettings, env_settings
+from team_partner.teams import TeamProvider, placeholder_team_provider
+from team_partner.teams import router as teams_router
+
+FRONTEND_ORIGINS = ["http://localhost:4200", "http://localhost:4201"]
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +175,7 @@ def create_app(
     settings: EnvSettings | None = None,
     model_client: ModelClient | None = None,
     tools: Iterable[HarnessTool] = (),
+    team_provider: TeamProvider = placeholder_team_provider,
 ) -> FastAPI:
     settings = settings or env_settings
 
@@ -187,7 +193,15 @@ def create_app(
     app = FastAPI(title="AI Team Partner API", lifespan=lifespan)
     app.state.settings = settings
     app.state.model_client = model_client
+    app.state.team_provider = team_provider
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=FRONTEND_ORIGINS,
+        allow_methods=["GET"],
+        allow_headers=["*"],
+    )
     app.include_router(router)
+    app.include_router(teams_router)
 
     @app.get("/health", include_in_schema=False)
     async def health() -> dict[str, str]:

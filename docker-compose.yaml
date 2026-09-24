@@ -14,3 +14,32 @@ services:
       - .:/app
       - /app/node_modules
     restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    cap_drop:
+      - NET_RAW
+    command: uv run --no-dev --no-sync team-partner-http
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      HTTP_HOST: 0.0.0.0
+      HTTP_PORT: 8888
+      DATABASE_URL: sqlite:////app/data/team_partner.db
+    ports:
+      - '${BACKEND_PORT:-8888}:8888'
+    volumes:
+      - backend_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8888/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  backend_data:

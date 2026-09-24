@@ -67,9 +67,7 @@ async def run_cli(executable: str, args: list[str]) -> CLIResult:
     except TimeoutError:
         process.kill()
         await process.communicate()
-        return CLIResult(
-            exit_code=None, stdout="", stderr=f"{executable} timed out after 30 seconds"
-        )
+        return CLIResult(exit_code=None, stdout="", stderr=f"{executable} timed out after 30 seconds")
     except asyncio.CancelledError:
         process.kill()
         await process.communicate()
@@ -84,39 +82,25 @@ async def run_cli(executable: str, args: list[str]) -> CLIResult:
 def create_team_tools(factory: sessionmaker[Session]) -> tuple[HarnessTool, ...]:
     storage = TeamContextStorage(factory)
 
-    async def get_team_context(
-        context: ToolCallContext, input_value: EmptyInput
-    ) -> TeamContext:
+    async def get_team_context(context: ToolCallContext, input_value: EmptyInput) -> TeamContext:
         return storage.get()
 
-    async def save_team_member(
-        context: ToolCallContext, input_value: TeamMember
-    ) -> TeamMember:
+    async def save_team_member(context: ToolCallContext, input_value: TeamMember) -> TeamMember:
         return storage.save_member(input_value)
 
-    async def remove_team_member(
-        context: ToolCallContext, input_value: RemoveMember
-    ) -> Removed:
+    async def remove_team_member(context: ToolCallContext, input_value: RemoveMember) -> Removed:
         return Removed(removed=storage.remove_member(input_value.name))
 
-    async def save_jira_team(
-        context: ToolCallContext, input_value: JiraTeam
-    ) -> JiraTeam:
+    async def save_jira_team(context: ToolCallContext, input_value: JiraTeam) -> JiraTeam:
         return storage.save_jira_team(input_value)
 
-    async def remove_jira_team(
-        context: ToolCallContext, input_value: RemoveJiraTeam
-    ) -> Removed:
+    async def remove_jira_team(context: ToolCallContext, input_value: RemoveJiraTeam) -> Removed:
         return Removed(removed=storage.remove_jira_team(input_value.board_id))
 
-    async def save_github_repo(
-        context: ToolCallContext, input_value: GitHubRepo
-    ) -> GitHubRepo:
+    async def save_github_repo(context: ToolCallContext, input_value: GitHubRepo) -> GitHubRepo:
         return storage.save_github_repo(input_value)
 
-    async def remove_github_repo(
-        context: ToolCallContext, input_value: RemoveGitHubRepo
-    ) -> Removed:
+    async def remove_github_repo(context: ToolCallContext, input_value: RemoveGitHubRepo) -> Removed:
         return Removed(removed=storage.remove_github_repo(input_value.full_name))
 
     async def gh_cli(context: ToolCallContext, input_value: CLICommand) -> CLIResult:
@@ -136,9 +120,7 @@ def create_team_tools(factory: sessionmaker[Session]) -> tuple[HarnessTool, ...]
             save_team_member,
             "Add or update a team member by name, with optional Jira account ID, GitHub login and ownership.",
         ),
-        HarnessTool(
-            "remove_team_member", remove_team_member, "Remove a team member by name."
-        ),
+        HarnessTool("remove_team_member", remove_team_member, "Remove a team member by name."),
         HarnessTool(
             "save_jira_team",
             save_jira_team,

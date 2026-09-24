@@ -1,0 +1,16 @@
+services:
+  frontend:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    cap_drop:
+      - NET_RAW
+    command: sh -lc "npm ci && npm run dev -- --port 4200 --host 0.0.0.0"
+    ports:
+      - '${FRONTEND_PORT:-4201}:4200'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    restart: unless-stopped

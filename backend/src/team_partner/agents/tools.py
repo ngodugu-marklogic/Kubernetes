@@ -1,10 +1,12 @@
 import asyncio
 import json
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+import httpx
 from hyperforge.harness_sdk import HarnessTool, ToolCallContext
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session, sessionmaker
 
 from team_partner.agents.team_context import (
@@ -63,8 +65,51 @@ class TeamsAlertResult(BaseModel):
     message: str
 
 
+class JiraSearch(BaseModel):
+    jql: str = Field(min_length=1, description="JQL query scoped to the saved Jira projects or boards")
+    fields: list[str] = Field(
+        default_factory=lambda: ["summary", "status", "assignee", "priority", "updated"],
+        description="Issue fields to return",
+    )
+    max_results: int = Field(default=50, ge=1, le=100)
+
+
+class JiraSearchResult(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    issues: list[dict[str, Any]] = Field(default_factory=list)
+    next_page_token: str | None = Field(default=None, alias="nextPageToken")
+    is_last: bool | None = Field(default=None, alias="isLast")
+
+
 class EmptyInput(BaseModel):
     pass
+
+
+class JiraClient:
+    def __init__(self, settings: EnvSettings, transport: httpx.AsyncBaseTransport | None = None) -> None:
+        self.settings = settings
+        self.transport = transport
+
+    async def search(self, search: JiraSearch) -> JiraSearchResult:
+        if not self.settings.jira_api_token or not self.settings.jira_email or not self.settings.jira_base_url:
+            raise RuntimeError("JIRA_API_TOKEN, JIRA_EMAIL, and JIRA_BASE_URL are required for Jira queries")
+        async with httpx.AsyncClient(
+            auth=(self.settings.jira_email, self.settings.jira_api_token),
+            base_url=self.settings.jira_base_url.rstrip("/"),
+            timeout=30,
+            transport=self.transport,
+        ) as client:
+            response = await client.post(
+                "/rest/api/3/search/jql",
+                json={
+                    "jql": search.jql,
+                    "fields": search.fields,
+                    "maxResults": search.max_results,
+                },
+            )
+            response.raise_for_status()
+            return JiraSearchResult.model_validate(response.json())
 
 
 async def run_cli(executable: str, args: list[str]) -> CLIResult:
@@ -119,7 +164,9 @@ async def post_teams_webhook(
                 status = getattr(response, "status", None)
                 return TeamsAlertResult(delivered=True, status_code=status, message="Alert sent to Teams")
         except HTTPError as exc:
-            return TeamsAlertResult(delivered=False, status_code=exc.code, message=f"Teams webhook returned HTTP {exc.code}")
+            return TeamsAlertResult(
+                delivered=False, status_code=exc.code, message=f"Teams webhook returned HTTP {exc.code}"
+            )
         except URLError as exc:
             return TeamsAlertResult(delivered=False, status_code=None, message=f"Teams webhook failed: {exc.reason}")
 
@@ -128,6 +175,7 @@ async def post_teams_webhook(
 
 def create_team_tools(factory: sessionmaker[Session], settings: EnvSettings) -> tuple[HarnessTool, ...]:
     storage = TeamContextStorage(factory)
+    jira = JiraClient(settings)
 
     async def get_team_context(context: ToolCallContext, input_value: EmptyInput) -> TeamContext:
         return storage.get()
@@ -161,6 +209,9 @@ def create_team_tools(factory: sessionmaker[Session], settings: EnvSettings) -> 
 
     async def acli(context: ToolCallContext, input_value: CLICommand) -> CLIResult:
         return await run_cli("acli", input_value.args)
+
+    async def jira_search(context: ToolCallContext, input_value: JiraSearch) -> JiraSearchResult:
+        return await jira.search(input_value)
 
     async def teams_send_alert(context: ToolCallContext, input_value: TeamsAlert) -> TeamsAlertResult:
         webhook_url = input_value.webhook_url or settings.teams_webhook_url
@@ -227,7 +278,12 @@ def create_team_tools(factory: sessionmaker[Session], settings: EnvSettings) -> 
         HarnessTool(
             "acli",
             acli,
-            "Run the machine's authenticated acli Jira/Confluence CLI. Supply argv as separate strings; use saved Jira boards to scope queries. Results include exit code and output.",
+            "Run the authenticated Atlassian CLI. Supply argv as separate strings; use saved Jira boards to scope queries. Results include exit code and output.",
+        ),
+        HarnessTool(
+            "jira_search",
+            jira_search,
+            "Search Jira issues with JQL using the configured Jira API token. Use saved Jira projects and boards to scope queries.",
         ),
         HarnessTool(
             "teams_send_alert",

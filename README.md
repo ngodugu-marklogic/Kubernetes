@@ -58,6 +58,10 @@ Run the end-to-end WebSocket and ACLI smoke test from `backend/`:
 uv run --no-sync python ../scripts/test-agent-websocket.py
 uv run --no-sync python ../scripts/test-agent-websocket.py --require-authenticated
 ```
+Jira issue search uses the Jira Cloud REST API directly. Set `JIRA_API_TOKEN`,
+`JIRA_EMAIL`, and `JIRA_BASE_URL` (for example,
+`https://your-domain.atlassian.net`) in the root `.env`. The agent exposes this
+integration through its read-only `jira_search` tool.
 
 For local Python development and API details, see [backend/README.md](backend/README.md).
 

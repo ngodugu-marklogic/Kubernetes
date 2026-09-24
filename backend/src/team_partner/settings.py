@@ -19,6 +19,9 @@ class EnvSettings(BaseSettings):
     jira_api_token: str | None = None
     teams_webhook_url: str | None = None
     teams_webhook_bearer_token: str | None = None
+    jira_api_token: str | None = None
+    jira_email: str | None = None
+    jira_base_url: str | None = None
 
 
 env_settings = EnvSettings()

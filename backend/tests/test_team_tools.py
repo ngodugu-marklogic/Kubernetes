@@ -157,7 +157,7 @@ def test_agent_proxies_clis_with_literal_arguments(tmp_path, monkeypatch):
         script = tmp_path / executable
         script.write_text("#!/bin/sh\nprintf '%s\n' \"$@\"\n")
         script.chmod(0o755)
-    monkeypatch.setenv("PATH", f"{tmpg_path}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ['PATH']}")
     settings = EnvSettings(database_url=f"sqlite:///{tmp_path / 'team.db'}", _env_file=None)
     with TestClient(create_app(settings, model_client=CLIModelClient())) as client:
         session_id = client.post("/api/v1/agents/sessions", json={}).json()["id"]

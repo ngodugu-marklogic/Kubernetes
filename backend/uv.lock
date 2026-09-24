@@ -46,6 +46,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "httpx" },
     { name = "hyperforge" },
     { name = "pydantic-settings" },
     { name = "sqlalchemy" },
@@ -54,7 +55,6 @@ dependencies = [
 
 [package.optional-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -62,7 +62,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
-    { name = "httpx", marker = "extra == 'dev'", specifier = ">=0.28" },
+    { name = "httpx", specifier = ">=0.28" },
     { name = "hyperforge", git = "https://github.com/nuclia/hyperforge.git?subdirectory=hyperforge&rev=f93583228b914d6b764e50874308b44dc5655265" },
     { name = "pydantic-settings", specifier = ">=2.10" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8" },

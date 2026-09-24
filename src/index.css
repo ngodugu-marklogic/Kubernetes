@@ -109,6 +109,11 @@ h2 {
   padding: 18px 20px;
   border-bottom: 1px solid #e1e5e8;
 }
+.heading-with-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 .table-wrap {
   overflow-x: auto;
 }
@@ -182,6 +187,99 @@ td {
 }
 .team-picker-status-notice {
   color: #785a12;
+}
+.story-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 20px 20px;
+  list-style: none;
+}
+.story-card {
+  border: 1px solid #e1e5e8;
+  border-radius: 6px;
+  padding: 14px 16px;
+  background: #f7f8f9;
+}
+.story-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.story-key {
+  color: #6c7780;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+}
+.story-summary {
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.story-meta,
+.story-activity {
+  margin: 6px 0 0;
+  color: #6c7780;
+  font-size: 13px;
+}
+.story-activity {
+  font-style: italic;
+}
+.story-dev-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.dev-chip {
+  display: inline-flex;
+  border: 1px solid #d6dce1;
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: #17202a;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.dev-chip-branch {
+  font-family: 'Manrope', sans-serif;
+  color: #4a5560;
+}
+.dev-chip-pr {
+  color: #176b52;
+  border-color: #176b52;
+}
+.dev-chip-pr:hover {
+  background: #e8f2ee;
+}
+.collapse-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d6dce1;
+  border-radius: 6px;
+  color: #17202a;
+  background: #fff;
+  cursor: pointer;
+}
+.collapse-toggle:hover {
+  border-color: #176b52;
+  color: #176b52;
+}
+.collapse-toggle-arrow {
+  display: inline-block;
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.15s ease;
+}
+.collapse-toggle-collapsed .collapse-toggle-arrow {
+  transform: rotate(-90deg);
 }
 .team-list {
   display: flex;

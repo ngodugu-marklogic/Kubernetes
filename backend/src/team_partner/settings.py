@@ -13,6 +13,10 @@ class EnvSettings(BaseSettings):
     nua_api_key: str | None = None
     nua_api_uri: str = "https://aws-us-east-2-1.rag.progress.cloud"
     default_chat_model: str = "chatgpt-5.6-sol"
+    # Temporary direct Jira REST access, until the Jira MCP integration replaces it.
+    jira_base_url: str | None = None
+    jira_email: str | None = None
+    jira_api_token: str | None = None
 
 
 env_settings = EnvSettings()

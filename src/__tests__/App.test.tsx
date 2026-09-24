@@ -7,9 +7,24 @@ describe('App', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => ({
+      vi.fn(async (url: string) => ({
         ok: true,
-        json: async () => ({ teams: ['Platform', 'Growth'] }),
+        json: async () =>
+          url.includes('/stories')
+            ? {
+                stories: [
+                  {
+                    key: 'EX-1',
+                    summary: 'Ship it',
+                    status: 'In Progress',
+                    assignee: 'Jamie Lee',
+                    last_activity: 'Jamie Lee updated the status yesterday',
+                    branches: ['feature/ex-1'],
+                    pull_requests: [{ title: 'Ship it PR', url: 'https://example.com/pr/1', status: 'Open' }],
+                  },
+                ],
+              }
+            : { teams: ['Platform', 'Growth'] },
       })),
     );
   });
@@ -28,5 +43,9 @@ describe('App', () => {
       expect(screen.getByRole('button', { name: 'Platform' })).toBeInTheDocument();
     });
     expect(screen.getByRole('button', { name: 'Growth' })).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText('Ship it')).toBeInTheDocument();
+    });
   });
 });

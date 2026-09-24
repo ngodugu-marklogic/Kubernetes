@@ -61,4 +61,12 @@ Custom `HarnessTool` implementations can also be passed to
   landing page. `create_app(team_provider=...)` accepts a `() -> list[str]` callable
   to source the list; it defaults to a placeholder until the Jira MCP integration
   supplies the real "Agile Team" field values.
+- `GET /api/v1/teams/{team}/stories` returns `{"stories": [{"key", "summary", "status",
+  "assignee", "last_activity", "branches", "pull_requests"}, ...]}` for the stories
+  currently assigned to that Agile Team. `last_activity` is a short blurb about the
+  most recent change (comment, field update, etc.); `branches` is a list of related
+  dev branch names; `pull_requests` is a list of `{"title", "url", "status"}`.
+  `create_app(story_provider=...)` accepts a `(team: str) -> list[Story]` callable to
+  source the list; it defaults to a placeholder until the Jira MCP integration supplies
+  real issues.
 

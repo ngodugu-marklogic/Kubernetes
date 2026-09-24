@@ -5,6 +5,7 @@ description = "AI team partner and scrum master API"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
+    "httpx>=0.28",
     "hyperforge",
     "pydantic-settings>=2.10",
     "sqlalchemy>=2.0,<3",
@@ -16,7 +17,7 @@ dependencies = [
 hyperforge = { git = "https://github.com/nuclia/hyperforge.git", rev = "f93583228b914d6b764e50874308b44dc5655265", subdirectory = "hyperforge" }
 
 [project.optional-dependencies]
-dev = ["httpx>=0.28", "pytest>=8", "ruff>=0.15"]
+dev = ["pytest>=8", "ruff>=0.15"]
 
 [build-system]
 requires = ["setuptools>=77", "wheel"]

@@ -14,7 +14,10 @@ from team_partner.agents.runtime import open_agent
 from team_partner.agents.storage import SQLiteHarnessStorage
 from team_partner.agents.tools import create_team_tools
 from team_partner.db import create_database
+from team_partner.jira_client import build_live_providers
 from team_partner.settings import EnvSettings, env_settings
+from team_partner.stories import StoryProvider, placeholder_story_provider
+from team_partner.stories import router as stories_router
 from team_partner.teams import TeamProvider, placeholder_team_provider
 from team_partner.teams import router as teams_router
 
@@ -176,6 +179,7 @@ def create_app(
     model_client: ModelClient | None = None,
     tools: Iterable[HarnessTool] = (),
     team_provider: TeamProvider = placeholder_team_provider,
+    story_provider: StoryProvider = placeholder_story_provider,
 ) -> FastAPI:
     settings = settings or env_settings
 
@@ -194,6 +198,7 @@ def create_app(
     app.state.settings = settings
     app.state.model_client = model_client
     app.state.team_provider = team_provider
+    app.state.story_provider = story_provider
     app.add_middleware(
         CORSMiddleware,
         allow_origins=FRONTEND_ORIGINS,
@@ -202,6 +207,7 @@ def create_app(
     )
     app.include_router(router)
     app.include_router(teams_router)
+    app.include_router(stories_router)
 
     @app.get("/health", include_in_schema=False)
     async def health() -> dict[str, str]:
@@ -210,4 +216,8 @@ def create_app(
     return app
 
 
-app = create_app()
+_live_providers = build_live_providers(env_settings)
+app = create_app(
+    team_provider=_live_providers[0] if _live_providers else placeholder_team_provider,
+    story_provider=_live_providers[1] if _live_providers else placeholder_story_provider,
+)
